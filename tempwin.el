@@ -23,20 +23,19 @@
 ;;; Code:
 
 (defun tempwin-set-timer-callback (window function)
-  (set-window-parameter window 'tempwin-timer-callback function)
-)
+  (set-window-parameter window 'tempwin-timer-callback function))
 
 (defun tempwin-get-timer-callback (window)
-  (window-parameter window 'tempwin-timer-callback)
-)
+  (window-parameter window 'tempwin-timer-callback))
 
 (defun tempwin-set-parent-window (child parent)
-  (set-window-parameter child 'tempwin-parent-window parent)
-)
+  (set-window-parameter child 'tempwin-parent-window parent))
 
 (defun tempwin-get-parent-window (window)
-  (window-parameter window 'tempwin-parent-window)
-)
+  (window-parameter window 'tempwin-parent-window))
+
+(defun tempwin-tempp (window)
+  (tempwin-get-timer-callback window))
 
 (defun tempwin-timer-function ()
   (let ((callbacks nil))
@@ -78,15 +77,25 @@
 (defvar tempwin-timer)
 (defcustom tempwin-timer-interval 0.1 "timer interval")
 
+(defvar tempwin-minor-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [remap keyboard-quit] (lambda () (interactive) (if (tempwin-tempp (selected-window)) (delete-window) (keyboard-quit))))
+    map
+    ))
+
+(define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
+
 (defun tempwin-start ()
   (interactive)
+  (tempwin-minor-mode 1)
   (unless tempwin-timer
     (setq tempwin-timer (run-with-idle-timer tempwin-timer-interval t 'tempwin-timer-function))))
 
 (defun tempwin-stop ()
   (interactive)
   (cancel-timer tempwin-timer)
-  (setq tempwin-timer nil))
+  (setq tempwin-timer nil)
+  (tempwin-minor-mode 0))
 
 (provide 'tempwin)
 
