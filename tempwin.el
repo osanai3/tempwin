@@ -34,6 +34,18 @@
 (defun tempwin-get-parent-window (window)
   (window-parameter window 'tempwin-parent-window))
 
+(defun tempwin-set-lifetime (window lifetime)
+  (set-window-parameter
+   window
+   'tempwin-live-until
+   (time-add (current-time) (list 0 lifetime 0 0)))
+  )
+
+(defun tempwin-in-lifetimep (window)
+  (time-less-p
+   (current-time)
+   (window-parameter window 'tempwin-live-until)))
+
 (defun tempwin-tempp (window)
   (tempwin-get-timer-callback window))
 
@@ -45,14 +57,16 @@
          (when callback (push callback callbacks)))))
     (mapcar 'funcall callbacks)))
 
-(defun tempwin-create-child-window (parent size side)
+(defun tempwin-create-child-window (parent size side lifetime)
   (let ((child (split-window parent (- size) side)))
     (tempwin-set-parent-window child parent)
     (tempwin-set-timer-callback
      child
      (lambda ()
-       (tempwin-delete-window-unless-descendant-is-selected child)
-       ))
+       (unless (tempwin-in-lifetimep child)
+         (tempwin-delete-window-unless-descendant-is-selected child)
+         )))
+    (tempwin-set-lifetime child lifetime)
     child
     ))
 
@@ -67,9 +81,10 @@
 
 (defun tempwin-display-buffer-alist-function (buffer alist)
   (let ((size (cdr (assoc 'size alist)))
-        (side (cdr (assoc 'side alist))))
+        (side (cdr (assoc 'side alist)))
+        (lifetime (or (cdr (assoc 'lifetime alist)) 0)))
     (with-selected-window
-        (tempwin-create-child-window (selected-window) size side)
+        (tempwin-create-child-window (selected-window) size side lifetime)
       (switch-to-buffer buffer nil t)
       (selected-window)
       )))
@@ -100,3 +115,26 @@
 (provide 'tempwin)
 
 ;;; tempwin.el ends here
+(setq display-buffer-alist
+      (list
+       (cons
+        "^\\*magit:.*\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . below) (size . 10)))
+        )
+       (cons
+        "^\\*eshell\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . below) (size . 15)))
+        )
+       (cons
+        "^\\*Completions\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . below) (size . 10) (lifetime . 3)))
+        )
+       ))
+(tempwin-start)
+(tempwin-stop)
