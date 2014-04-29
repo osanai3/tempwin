@@ -65,10 +65,16 @@
      (lambda ()
        (unless (tempwin-in-lifetimep child)
          (tempwin-delete-window-unless-descendant-is-selected child)
-         )))
+         )
+       (tempwin-delete-window-if-parent-is-deleted child)
+       ))
     (tempwin-set-lifetime child lifetime)
     child
     ))
+
+(defun tempwin-delete-window-if-parent-is-deleted (window)
+  (unless (window-live-p (tempwin-get-parent-window window))
+    (delete-window window)))
 
 (defun tempwin-descendantp (ancestor descendant)
   (or (eq ancestor descendant)
