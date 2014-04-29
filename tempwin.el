@@ -62,6 +62,15 @@
   (unless (tempwin-descendantp window (selected-window))
     (delete-window window)))
 
+(defun tempwin-display-buffer-alist-function (buffer alist)
+  (let ((size (cdr (assoc 'size alist)))
+        (side (cdr (assoc 'side alist))))
+    (with-selected-window
+        (tempwin-create-child-window (selected-window) size side)
+      (switch-to-buffer buffer nil t)
+      (selected-window)
+      )))
+
 (provide 'tempwin)
 
 ;;; tempwin.el ends here
