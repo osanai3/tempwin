@@ -22,6 +22,46 @@
 
 ;;; Code:
 
+(defun tempwin-set-timer-callback (window function)
+  (set-window-parameter window 'tempwin-timer-callback function)
+)
+
+(defun tempwin-get-timer-callback (window)
+  (window-parameter window 'tempwin-timer-callback)
+)
+
+(defun tempwin-set-parent-window (child parent)
+  (set-window-parameter child 'tempwin-parent-window parent)
+)
+
+(defun tempwin-get-parent-window (window)
+  (window-parameter window 'tempwin-parent-window)
+)
+
+(defun tempwin-timer-function ()
+  (let ((callbacks nil))
+    (walk-window-tree
+     (lambda (window)
+       (let ((callback (tempwin-get-timer-callback window)))
+         (when callback (push callback callbacks)))))
+    (mapcar 'funcall callbacks)))
+
+(defun tempwin-create-child-window (parent size side)
+  (let ((child (split-window parent (- size) side)))
+    (tempwin-set-parent-window child parent)
+    (tempwin-set-timer-callback child (lambda () (tempwin-delete-window-unless-descendant-is-selected child)))
+    child
+    ))
+
+(defun tempwin-descendantp (ancestor descendant)
+  (or (eq ancestor descendant)
+      (let ((parent (tempwin-get-parent-window descendant)))
+        (when parent (tempwin-descendantp ancestor parent)))))
+
+(defun tempwin-delete-window-unless-descendant-is-selected (window)
+  (unless (tempwin-descendantp window (selected-window))
+    (delete-window window)))
+
 (provide 'tempwin)
 
 ;;; tempwin.el ends here
