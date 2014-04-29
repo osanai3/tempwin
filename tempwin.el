@@ -49,7 +49,11 @@
 (defun tempwin-create-child-window (parent size side)
   (let ((child (split-window parent (- size) side)))
     (tempwin-set-parent-window child parent)
-    (tempwin-set-timer-callback child (lambda () (tempwin-delete-window-unless-descendant-is-selected child)))
+    (tempwin-set-timer-callback
+     child
+     (lambda ()
+       (tempwin-delete-window-unless-descendant-is-selected child)
+       ))
     child
     ))
 
@@ -70,6 +74,19 @@
       (switch-to-buffer buffer nil t)
       (selected-window)
       )))
+
+(defvar tempwin-timer)
+(defcustom tempwin-timer-interval 0.1 "timer interval")
+
+(defun tempwin-start ()
+  (interactive)
+  (unless tempwin-timer
+    (setq tempwin-timer (run-with-idle-timer tempwin-timer-interval t 'tempwin-timer-function))))
+
+(defun tempwin-stop ()
+  (interactive)
+  (cancel-timer tempwin-timer)
+  (setq tempwin-timer nil))
 
 (provide 'tempwin)
 
