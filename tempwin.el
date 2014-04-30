@@ -86,14 +86,15 @@
     (delete-window window)))
 
 (defun tempwin-display-buffer-alist-function (buffer alist)
-  (let ((size (cdr (assoc 'size alist)))
-        (side (cdr (assoc 'side alist)))
-        (lifetime (or (cdr (assoc 'lifetime alist)) 0)))
-    (with-selected-window
-        (tempwin-create-child-window (selected-window) size side lifetime)
-      (switch-to-buffer buffer nil t)
-      (selected-window)
-      )))
+  (unless (get-buffer-window-list buffer)
+    (let ((size (cdr (assoc 'size alist)))
+          (side (cdr (assoc 'side alist)))
+          (lifetime (or (cdr (assoc 'lifetime alist)) 0)))
+      (with-selected-window
+          (tempwin-create-child-window (selected-window) size side lifetime)
+        (switch-to-buffer buffer nil t)
+        (selected-window)
+        ))))
 
 (defvar tempwin-timer)
 (defcustom tempwin-timer-interval 0.1 "timer interval")
