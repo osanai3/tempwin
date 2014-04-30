@@ -50,12 +50,7 @@
   (tempwin-get-timer-callback window))
 
 (defun tempwin-timer-function ()
-  (let ((callbacks nil))
-    (walk-window-tree
-     (lambda (window)
-       (let ((callback (tempwin-get-timer-callback window)))
-         (when callback (push callback callbacks)))))
-    (mapcar 'funcall callbacks)))
+  (mapcar 'funcall (delq nil (mapcar 'tempwin-get-timer-callback (window-list)))))
 
 (defun tempwin-create-child-window (parent size side lifetime)
   (let ((child (split-window parent (- size) side)))
@@ -111,7 +106,7 @@
   (interactive)
   (tempwin-minor-mode 1)
   (unless tempwin-timer
-    (setq tempwin-timer (run-with-idle-timer tempwin-timer-interval t 'tempwin-timer-function))))
+    (setq tempwin-timer (run-with-timer tempwin-timer-interval tempwin-timer-interval 'tempwin-timer-function))))
 
 (defun tempwin-stop ()
   (interactive)
