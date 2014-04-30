@@ -57,15 +57,25 @@
     (tempwin-set-parent-window child parent)
     (tempwin-set-timer-callback
      child
-     (lambda ()
-       (unless (tempwin-in-lifetimep child)
-         (tempwin-delete-window-unless-descendant-is-selected child)
-         )
-       (tempwin-delete-window-if-parent-is-deleted child)
-       ))
+     (tempwin-create-timer-callback child)
+     )
     (tempwin-set-lifetime child lifetime)
     child
     ))
+
+(defun tempwin-create-timer-callback (window)
+  (lambda ()
+    (unless (tempwin-alivep window) (delete-window window))))
+
+(defun tempwin-alivep (window)
+  (and
+   (window-live-p (tempwin-get-parent-window window))
+   (or (tempwin-in-lifetimep window)
+       (tempwin-descendantp window (selected-window))
+       (eq (minibuffer-window) (selected-window))
+       )
+   )
+  )
 
 (defun tempwin-delete-window-if-parent-is-deleted (window)
   (unless (window-live-p (tempwin-get-parent-window window))
