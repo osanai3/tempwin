@@ -58,8 +58,12 @@ Return deleted window or nil if no window is deleted."
 (defun tempwin-tempp (window)
   (tempwin-get-suicide-function window))
 
+(defun tempwin-root-window (window)
+  (let ((parent (tempwin-get-parent-window window)))
+    (if parent (tempwin-root-window parent) window)))
+
 (defun tempwin-create-child-window (parent size side ignore-selected)
-  (let ((child (split-window parent (- size) side)))
+  (let ((child (split-window (tempwin-root-window parent) (- size) side)))
     (tempwin-set-parent-window child parent)
     (tempwin-set-suicide-function
      child
