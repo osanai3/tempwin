@@ -62,18 +62,19 @@ Return deleted window or nil if no window is deleted."
   (let ((parent (tempwin-get-parent-window window)))
     (if parent (tempwin-root-window parent) window)))
 
-(defun tempwin-create-child-window (parent size side ignore-selected)
-  (let ((child (split-window (tempwin-root-window parent) (- size) side)))
-    (tempwin-set-parent-window child parent)
-    (tempwin-set-suicide-function
-     child
-     (tempwin-create-suicide-function child)
-     )
-    (tempwin-set-ignore-selected child ignore-selected)
-    (tempwin-push-delete-window-list parent child)
-    (tempwin-push-delete-window-list child child)
-    child
-    ))
+(defun tempwin-create-child-window (parent size side ignore-selected frame-pop)
+  (let ((base-window (if frame-pop (frame-root-window parent) (tempwin-root-window parent))))
+    (let ((child (split-window  base-window (- size) side)))
+      (tempwin-set-parent-window child parent)
+      (tempwin-set-suicide-function
+       child
+       (tempwin-create-suicide-function child)
+       )
+      (tempwin-set-ignore-selected child ignore-selected)
+      (tempwin-push-delete-window-list parent child)
+      (tempwin-push-delete-window-list child child)
+      child
+      )))
 
 (defun tempwin-create-suicide-function (window)
   (lambda ()
@@ -100,9 +101,10 @@ Return deleted window or nil if no window is deleted."
   (unless (get-buffer-window-list buffer)
     (let ((size (cdr (assoc 'size alist)))
           (side (cdr (assoc 'side alist)))
-          (ignore-selected (or (cdr (assoc 'ignore-selected alist)) nil)))
+          (ignore-selected (or (cdr (assoc 'ignore-selected alist)) nil))
+          (frame-pop (cdr (assoc 'frame-pop alist))))
       (with-selected-window
-          (tempwin-create-child-window (selected-window) size side ignore-selected)
+          (tempwin-create-child-window (selected-window) size side ignore-selected frame-pop)
         (switch-to-buffer buffer nil t)
         (selected-window)
         ))))
@@ -140,7 +142,7 @@ Return deleted window or nil if no window is deleted."
         "^\\*magit:.*\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . above) (size . 10) (ignore-selected . t)))
+         '((side . above) (size . 10)))
         )
        (cons
         "^\\*eshell\\*$"
@@ -148,19 +150,25 @@ Return deleted window or nil if no window is deleted."
          'tempwin-display-buffer-alist-function
          '((side . below) (size . 15)))
         )
-       ;(cons
-        ;"^\\*Help\\*$"
-       ;(cons
-        ; 'tempwin-display-buffer-alist-function
-         ;'((side . below) (size . 15)))
-       ;)
-       ;(cons
-        ;"^\\*Completions\\*$"
-        ;(cons
-         ;'tempwin-display-buffer-alist-function
-       ;'((side . below) (size . 10) (lifetime . 1000)))
-       ;)
+       (cons
+        "^\\*IBuffer\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . left) (size . 25) (frame-pop . t)))
+        )
+       (cons
+        "^\\*Help\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . below) (size . 15)))
+        )
+       (cons
+        "^\\*Completions\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t)))
+        )
        ))
 ;(eval-buffer)
-(tempwin-start)
-(tempwin-stop)
+;(tempwin-start)
+;(tempwin-stop)
