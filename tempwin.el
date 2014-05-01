@@ -22,6 +22,8 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
 (defun tempwin-set-timer-callback (window function)
   (set-window-parameter window 'tempwin-timer-callback function))
 
@@ -46,6 +48,19 @@
    (current-time)
    (window-parameter window 'tempwin-live-until)))
 
+(defun tempwin-push-delete-window-list (window window-to-be-deleted)
+  (push window-to-be-deleted (window-parameter window 'tempwin-delete-window-list)))
+
+(defun tempwin-delete-window (window)
+  "Delete window registered by `tempwin-push-delete-window-list'.
+Return deleted window or nil if no window is deleted."
+  (when (window-parameter window 'tempwin-delete-window-list)
+    (let ((head (pop (window-parameter window 'tempwin-delete-window-list))))
+      (cond
+       ((window-live-p head) (delete-window head) head)
+       (t (tempwin-delete-window window))))))
+
+
 (defun tempwin-tempp (window)
   (tempwin-get-timer-callback window))
 
@@ -60,6 +75,8 @@
      (tempwin-create-timer-callback child)
      )
     (tempwin-set-lifetime child lifetime)
+    (tempwin-push-delete-window-list parent child)
+    (tempwin-push-delete-window-list child child)
     child
     ))
 
@@ -101,14 +118,17 @@
         (selected-window)
         ))))
 
-(defvar tempwin-timer)
+(defun tempwin-keyboard-quit ()
+  (interactive)
+  (unless (tempwin-delete-window (selected-window)) (keyboard-quit)))
+
+(defvar tempwin-timer nil)
 (defcustom tempwin-timer-interval 0.1 "timer interval")
 
 (defvar tempwin-minor-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap keyboard-quit] (lambda () (interactive) (if (tempwin-tempp (selected-window)) (delete-window) (keyboard-quit))))
-    map
-    ))
+    (define-key map [remap keyboard-quit] 'tempwin-keyboard-quit)
+    map))
 
 (define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
 
@@ -133,7 +153,7 @@
         "^\\*magit:.*\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . below) (size . 10)))
+         '((side . above) (size . 10)))
         )
        (cons
         "^\\*eshell\\*$"
@@ -141,12 +161,19 @@
          'tempwin-display-buffer-alist-function
          '((side . below) (size . 15)))
         )
-       (cons
-        "^\\*Completions\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . below) (size . 10) (lifetime . 3)))
-        )
+       ;(cons
+        ;"^\\*Help\\*$"
+       ;(cons
+        ; 'tempwin-display-buffer-alist-function
+         ;'((side . below) (size . 15)))
+       ;)
+       ;(cons
+        ;"^\\*Completions\\*$"
+        ;(cons
+         ;'tempwin-display-buffer-alist-function
+       ;'((side . below) (size . 10) (lifetime . 1000)))
+       ;)
        ))
+;(eval-buffer)
 (tempwin-start)
 (tempwin-stop)
