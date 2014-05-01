@@ -51,7 +51,8 @@ Return deleted window or nil if no window is deleted."
   (when (window-parameter window 'tempwin-delete-window-list)
     (let ((head (pop (window-parameter window 'tempwin-delete-window-list))))
       (cond
-       ((window-live-p head) (delete-window head) head)
+       ((eq head window) (delete-window window) window)
+       ((window-live-p head) (tempwin-push-delete-window-list window head) (tempwin-delete-window head))
        (t (tempwin-delete-window window))))))
 
 
@@ -142,33 +143,33 @@ Return deleted window or nil if no window is deleted."
         "^\\*magit:.*\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . above) (size . 10)))
-        )
+         '((side . above) (size . 10) (ignore-selected . t))
+        ))
        (cons
         "^\\*eshell\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . below) (size . 15)))
-        )
+         '((side . below) (size . 15) (ignore-selected . t))
+        ))
        (cons
         "^\\*IBuffer\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . left) (size . 25) (frame-pop . t)))
-        )
+         '((side . left) (size . 25) (frame-pop . t) (ignore-selected . t))
+        ))
        (cons
         "^\\*Help\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . below) (size . 15)))
-        )
+         '((side . below) (size . 15))
+         ))
        (cons
         "^\\*Completions\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t)))
+         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t))
         )
-       ))
+       )))
 ;(eval-buffer)
 ;(tempwin-start)
 ;(tempwin-stop)
