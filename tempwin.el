@@ -116,7 +116,7 @@ Return deleted window or nil if no window is deleted."
     (define-key map [remap keyboard-quit] 'tempwin-keyboard-quit)
     map))
 
-(defadvice other-window (after tempwin-delete-windows)
+(defun tempwin-delete-windows ()
   (mapcar 'funcall (delq nil (mapcar 'tempwin-get-timer-callback (window-list)))))
 
 (define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
@@ -124,13 +124,11 @@ Return deleted window or nil if no window is deleted."
 (defun tempwin-start ()
   (interactive)
   (tempwin-minor-mode 1)
-  (ad-enable-advice 'other-window 'after 'tempwin-delete-windows)
-  (ad-activate 'other-window))
+  (add-hook 'buffer-list-update-hook 'tempwin-delete-windows))
 
 (defun tempwin-stop ()
   (interactive)
-  (ad-disable-advice 'other-window 'after 'tempwin-delete-windows)
-  (ad-activate 'other-window)
+  (remove-hook 'buffer-list-update-hook 'tempwin-delete-windows)
   (tempwin-minor-mode 0))
 
 (provide 'tempwin)
