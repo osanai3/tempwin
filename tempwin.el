@@ -24,11 +24,11 @@
 
 (require 'cl-lib)
 
-(defun tempwin-set-timer-callback (window function)
-  (set-window-parameter window 'tempwin-timer-callback function))
+(defun tempwin-set-suicide-function (window function)
+  (set-window-parameter window 'tempwin-suicide-function function))
 
-(defun tempwin-get-timer-callback (window)
-  (window-parameter window 'tempwin-timer-callback))
+(defun tempwin-get-suicide-function (window)
+  (window-parameter window 'tempwin-suicide-function))
 
 (defun tempwin-set-parent-window (child parent)
   (set-window-parameter child 'tempwin-parent-window parent))
@@ -62,17 +62,14 @@ Return deleted window or nil if no window is deleted."
 
 
 (defun tempwin-tempp (window)
-  (tempwin-get-timer-callback window))
-
-(defun tempwin-timer-function ()
-  (mapcar 'funcall (delq nil (mapcar 'tempwin-get-timer-callback (window-list)))))
+  (tempwin-get-suicide-function window))
 
 (defun tempwin-create-child-window (parent size side lifetime)
   (let ((child (split-window parent (- size) side)))
     (tempwin-set-parent-window child parent)
-    (tempwin-set-timer-callback
+    (tempwin-set-suicide-function
      child
-     (tempwin-create-timer-callback child)
+     (tempwin-create-suicide-function child)
      )
     (tempwin-set-lifetime child lifetime)
     (tempwin-push-delete-window-list parent child)
@@ -80,7 +77,7 @@ Return deleted window or nil if no window is deleted."
     child
     ))
 
-(defun tempwin-create-timer-callback (window)
+(defun tempwin-create-suicide-function (window)
   (lambda ()
     (unless (tempwin-alivep window) (delete-window window))))
 
@@ -94,18 +91,10 @@ Return deleted window or nil if no window is deleted."
    )
   )
 
-(defun tempwin-delete-window-if-parent-is-deleted (window)
-  (unless (window-live-p (tempwin-get-parent-window window))
-    (delete-window window)))
-
 (defun tempwin-descendantp (ancestor descendant)
   (or (eq ancestor descendant)
       (let ((parent (tempwin-get-parent-window descendant)))
         (when parent (tempwin-descendantp ancestor parent)))))
-
-(defun tempwin-delete-window-unless-descendant-is-selected (window)
-  (unless (tempwin-descendantp window (selected-window))
-    (delete-window window)))
 
 (defun tempwin-display-buffer-alist-function (buffer alist)
   (unless (get-buffer-window-list buffer)
@@ -122,26 +111,26 @@ Return deleted window or nil if no window is deleted."
   (interactive)
   (unless (tempwin-delete-window (selected-window)) (keyboard-quit)))
 
-(defvar tempwin-timer nil)
-(defcustom tempwin-timer-interval 0.1 "timer interval")
-
 (defvar tempwin-minor-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [remap keyboard-quit] 'tempwin-keyboard-quit)
     map))
+
+(defadvice other-window (after tempwin-delete-windows)
+  (mapcar 'funcall (delq nil (mapcar 'tempwin-get-timer-callback (window-list)))))
 
 (define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
 
 (defun tempwin-start ()
   (interactive)
   (tempwin-minor-mode 1)
-  (unless tempwin-timer
-    (setq tempwin-timer (run-with-timer tempwin-timer-interval tempwin-timer-interval 'tempwin-timer-function))))
+  (ad-enable-advice 'other-window 'after 'tempwin-delete-windows)
+  (ad-activate 'other-window))
 
 (defun tempwin-stop ()
   (interactive)
-  (cancel-timer tempwin-timer)
-  (setq tempwin-timer nil)
+  (ad-disable-advice 'other-window 'after 'tempwin-delete-windows)
+  (ad-activate 'other-window)
   (tempwin-minor-mode 0))
 
 (provide 'tempwin)
