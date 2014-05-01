@@ -36,17 +36,11 @@
 (defun tempwin-get-parent-window (window)
   (window-parameter window 'tempwin-parent-window))
 
-(defun tempwin-set-lifetime (window lifetime)
-  (set-window-parameter
-   window
-   'tempwin-live-until
-   (time-add (current-time) (list 0 lifetime 0 0)))
-  )
+(defun tempwin-set-ignore-selected (window ignore-selected)
+  (set-window-parameter window 'tempwin-ignore-selected ignore-selected))
 
-(defun tempwin-in-lifetimep (window)
-  (time-less-p
-   (current-time)
-   (window-parameter window 'tempwin-live-until)))
+(defun tempwin-get-ignore-selected (window)
+  (window-parameter window 'tempwin-ignore-selected))
 
 (defun tempwin-push-delete-window-list (window window-to-be-deleted)
   (push window-to-be-deleted (window-parameter window 'tempwin-delete-window-list)))
@@ -64,14 +58,14 @@ Return deleted window or nil if no window is deleted."
 (defun tempwin-tempp (window)
   (tempwin-get-suicide-function window))
 
-(defun tempwin-create-child-window (parent size side lifetime)
+(defun tempwin-create-child-window (parent size side ignore-selected)
   (let ((child (split-window parent (- size) side)))
     (tempwin-set-parent-window child parent)
     (tempwin-set-suicide-function
      child
      (tempwin-create-suicide-function child)
      )
-    (tempwin-set-lifetime child lifetime)
+    (tempwin-set-ignore-selected child ignore-selected)
     (tempwin-push-delete-window-list parent child)
     (tempwin-push-delete-window-list child child)
     child
@@ -79,12 +73,14 @@ Return deleted window or nil if no window is deleted."
 
 (defun tempwin-create-suicide-function (window)
   (lambda ()
-    (unless (tempwin-alivep window) (delete-window window))))
+    (unless (tempwin-alivep window)
+      (delete-window window)
+      (tempwin-delete-windows))))
 
 (defun tempwin-alivep (window)
   (and
    (window-live-p (tempwin-get-parent-window window))
-   (or (tempwin-in-lifetimep window)
+   (or (tempwin-get-ignore-selected window)
        (tempwin-descendantp window (selected-window))
        (eq (minibuffer-window) (selected-window))
        )
@@ -100,9 +96,9 @@ Return deleted window or nil if no window is deleted."
   (unless (get-buffer-window-list buffer)
     (let ((size (cdr (assoc 'size alist)))
           (side (cdr (assoc 'side alist)))
-          (lifetime (or (cdr (assoc 'lifetime alist)) 0)))
+          (ignore-selected (or (cdr (assoc 'ignore-selected alist)) nil)))
       (with-selected-window
-          (tempwin-create-child-window (selected-window) size side lifetime)
+          (tempwin-create-child-window (selected-window) size side ignore-selected)
         (switch-to-buffer buffer nil t)
         (selected-window)
         ))))
@@ -117,7 +113,7 @@ Return deleted window or nil if no window is deleted."
     map))
 
 (defun tempwin-delete-windows ()
-  (mapcar 'funcall (delq nil (mapcar 'tempwin-get-timer-callback (window-list)))))
+  (mapcar 'funcall (delq nil (mapcar 'tempwin-get-suicide-function (window-list)))))
 
 (define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
 
@@ -140,7 +136,7 @@ Return deleted window or nil if no window is deleted."
         "^\\*magit:.*\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . above) (size . 10)))
+         '((side . above) (size . 10) (ignore-selected . t)))
         )
        (cons
         "^\\*eshell\\*$"
