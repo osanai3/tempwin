@@ -162,19 +162,19 @@ Return deleted window or nil if no window is deleted."
         "^\\*magit:.*\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . above) (size . 10) (ignore-selected . t))
+         '((side . above) (size . 10))
         ))
        (cons
         "^\\*eshell\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . below) (size . 15) (ignore-selected . t))
+         '((side . below) (size . 15))
         ))
        (cons
         "^\\*IBuffer\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . left) (size . 25) (frame-pop . t) (ignore-selected . t))
+         '((side . left) (size . 25) (frame-pop . t))
         ))
        (cons
         "^\\*Help\\*$"
