@@ -24,6 +24,15 @@
 
 (require 'cl-lib)
 
+(defvar tempwin-window-parameters
+  '(
+    tempwin-suicide-function
+    tempwin-parent-window
+    tempwin-ignore-selected
+    tempwin-delete-window-list
+    )
+  "persistent parameters")
+
 (defun tempwin-set-suicide-function (window function)
   (set-window-parameter window 'tempwin-suicide-function function))
 
@@ -127,12 +136,22 @@ Return deleted window or nil if no window is deleted."
 (defun tempwin-start ()
   (interactive)
   (tempwin-minor-mode 1)
-  (add-hook 'buffer-list-update-hook 'tempwin-delete-windows))
+  (add-hook 'buffer-list-update-hook 'tempwin-delete-windows)
+  (mapcar
+   (lambda (param-name)
+     (push (cons param-name t) window-persistent-parameters))
+   tempwin-window-parameters)
+  t)
 
 (defun tempwin-stop ()
   (interactive)
   (remove-hook 'buffer-list-update-hook 'tempwin-delete-windows)
-  (tempwin-minor-mode 0))
+  (tempwin-minor-mode 0)
+  (mapcar
+   (lambda (param-name)
+     (setq window-persistent-parameters (assq-delete-all param-name window-persistent-parameters)))
+   tempwin-window-parameters)
+  t)
 
 (provide 'tempwin)
 
