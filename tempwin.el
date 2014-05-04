@@ -91,7 +91,16 @@ Return deleted window or nil if no window is deleted."
       (tempwin-push-delete-window-list parent child)
       (tempwin-push-delete-window-list child child)
       (with-selected-window child (switch-to-buffer buffer nil t))
-      (when dedicated (tempwin-set-dedicated-buffer child buffer))
+      (when dedicated
+        (tempwin-set-dedicated-buffer child buffer)
+        (set-window-parameter
+         child
+         'delete-window
+         (lambda (window)
+           (set-window-parameter window 'delete-window t)
+           (unless (eq (window-buffer window) buffer)
+             (tempwin-copy-buffer-to-parent-window window))
+           (when (window-live-p window) (delete-window window)))))
       child
       )))
 
@@ -121,8 +130,10 @@ Return deleted window or nil if no window is deleted."
        (eq (window-buffer window) (tempwin-get-dedicated-buffer window))))
 
 (defun tempwin-copy-buffer-to-parent-window (window)
-  (with-selected-window (tempwin-get-parent-window window)
-    (switch-to-buffer (window-buffer window))))
+  (let ((parent (tempwin-get-parent-window window)))
+    (when parent
+      (with-selected-window parent
+        (switch-to-buffer (window-buffer window))))))
 
 (defun tempwin-descendantp (ancestor descendant)
   (or (eq ancestor descendant)
