@@ -106,8 +106,8 @@ Return deleted window or nil if no window is deleted."
 
 (defun tempwin-create-suicide-function (window)
   (lambda ()
-    (unless (tempwin-alivep window)
-        (delete-window window)
+    (when (and (window-live-p window) (not (tempwin-alivep window)))
+      (delete-window window)
       (tempwin-delete-windows))))
 
 (defun tempwin-alivep (window)
