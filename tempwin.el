@@ -30,6 +30,7 @@
     tempwin-parent-window
     tempwin-ignore-selected
     tempwin-delete-window-list
+    tempwin-dedicated-buffer
     )
   "persistent parameters")
 
@@ -54,6 +55,12 @@
 (defun tempwin-push-delete-window-list (window window-to-be-deleted)
   (push window-to-be-deleted (window-parameter window 'tempwin-delete-window-list)))
 
+(defun tempwin-set-dedicated-buffer (window buffer)
+  (set-window-parameter window 'tempwin-dedicated-buffer buffer))
+
+(defun tempwin-get-dedicated-buffer (window)
+  (window-parameter window 'tempwin-dedicated-buffer))
+
 (defun tempwin-delete-window (window)
   "Delete window registered by `tempwin-push-delete-window-list'.
 Return deleted window or nil if no window is deleted."
@@ -72,7 +79,7 @@ Return deleted window or nil if no window is deleted."
   (let ((parent (tempwin-get-parent-window window)))
     (if parent (tempwin-root-window parent) window)))
 
-(defun tempwin-create-child-window (parent size side ignore-selected frame-pop)
+(defun tempwin-create-child-window (parent buffer size side ignore-selected frame-pop dedicated)
   (let ((base-window (if frame-pop (frame-root-window parent) (tempwin-root-window parent))))
     (let ((child (split-window  base-window (- size) side)))
       (tempwin-set-parent-window child parent)
@@ -83,13 +90,15 @@ Return deleted window or nil if no window is deleted."
       (tempwin-set-ignore-selected child ignore-selected)
       (tempwin-push-delete-window-list parent child)
       (tempwin-push-delete-window-list child child)
+      (with-selected-window child (switch-to-buffer buffer nil t))
+      (when dedicated (tempwin-set-dedicated-buffer child buffer))
       child
       )))
 
 (defun tempwin-create-suicide-function (window)
   (lambda ()
     (unless (tempwin-alivep window)
-      (delete-window window)
+        (delete-window window)
       (tempwin-delete-windows))))
 
 (defun tempwin-alivep (window)
@@ -99,8 +108,17 @@ Return deleted window or nil if no window is deleted."
        (tempwin-descendantp window (selected-window))
        (eq (minibuffer-window) (selected-window))
        )
-   )
-  )
+   (or (not (tempwin-dedicated-windowp window))
+       (tempwin-valid-dedicated-windowp window)
+       )
+  ))
+
+(defun tempwin-dedicated-windowp (window)
+  (tempwin-get-dedicated-buffer window))
+
+(defun tempwin-valid-dedicated-windowp (window)
+  (and (tempwin-dedicated-windowp window)
+       (eq (window-buffer window) (tempwin-get-dedicated-buffer window))))
 
 (defun tempwin-descendantp (ancestor descendant)
   (or (eq ancestor descendant)
@@ -112,10 +130,11 @@ Return deleted window or nil if no window is deleted."
     (let ((size (cdr (assoc 'size alist)))
           (side (cdr (assoc 'side alist)))
           (ignore-selected (or (cdr (assoc 'ignore-selected alist)) nil))
-          (frame-pop (cdr (assoc 'frame-pop alist))))
+          (frame-pop (cdr (assoc 'frame-pop alist)))
+          (dedicated (cdr (assoc 'dedicated alist)))
+          )
       (with-selected-window
-          (tempwin-create-child-window (selected-window) size side ignore-selected frame-pop)
-        (switch-to-buffer buffer nil t)
+          (tempwin-create-child-window (selected-window) buffer size side ignore-selected frame-pop dedicated)
         (selected-window)
         ))))
 
@@ -174,8 +193,8 @@ Return deleted window or nil if no window is deleted."
         "^\\*IBuffer\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . left) (size . 25) (frame-pop . t))
-        ))
+         '((side . left) (size . 25) (frame-pop . t) (dedicated . t))
+         ))
        (cons
         "^\\*Help\\*$"
         (cons
@@ -186,9 +205,16 @@ Return deleted window or nil if no window is deleted."
         "^\\*Completions\\*$"
         (cons
          'tempwin-display-buffer-alist-function
-         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t))
+         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
+        ))
+       (cons
+        "^\\*Backtrace\\*$"
+        (cons
+         'tempwin-display-buffer-alist-function
+         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
         )
-       )))
+       ))
+      )
 ;(eval-buffer)
 ;(tempwin-start)
 ;(tempwin-stop)
