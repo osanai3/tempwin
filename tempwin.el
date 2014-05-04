@@ -120,6 +120,10 @@ Return deleted window or nil if no window is deleted."
   (and (tempwin-dedicated-windowp window)
        (eq (window-buffer window) (tempwin-get-dedicated-buffer window))))
 
+(defun tempwin-copy-buffer-to-parent-window (window)
+  (with-selected-window (tempwin-get-parent-window window)
+    (switch-to-buffer (window-buffer window))))
+
 (defun tempwin-descendantp (ancestor descendant)
   (or (eq ancestor descendant)
       (let ((parent (tempwin-get-parent-window descendant)))
