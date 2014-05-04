@@ -167,6 +167,9 @@ Return deleted window or nil if no window is deleted."
 
 (define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
 
+(defvar tempwin-timer nil)
+(defcustom tempwin-timer-interval 0.1 "timer interval")
+
 (defun tempwin-start ()
   (interactive)
   (tempwin-minor-mode 1)
@@ -175,6 +178,8 @@ Return deleted window or nil if no window is deleted."
    (lambda (param-name)
      (push (cons param-name t) window-persistent-parameters))
    tempwin-window-parameters)
+  (unless tempwin-timer
+    (setq tempwin-timer (run-with-timer tempwin-timer-interval tempwin-timer-interval 'tempwin-delete-windows)))
   t)
 
 (defun tempwin-stop ()
@@ -185,6 +190,8 @@ Return deleted window or nil if no window is deleted."
    (lambda (param-name)
      (setq window-persistent-parameters (assq-delete-all param-name window-persistent-parameters)))
    tempwin-window-parameters)
+  (cancel-timer tempwin-timer)
+  (setq tempwin-timer nil)
   t)
 
 (provide 'tempwin)
