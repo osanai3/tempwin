@@ -195,16 +195,15 @@ Return deleted window or nil if no window is deleted."
                 (funcall fix-alist alist)))))))
     (mapcar translate input)))
 
-(defcustom tempwin-display-buffer-alist
-  (tempwin-translate-to-buffer-alist
-   '(
-     ("^\\*eshell\\*$" (side . below) (size . 15))
-     ("^\\*IBuffer\\*$" (side . left) (size . 25) frame-pop dedicated)
-     ("^\\*Buffer List\\*$" (side . left) (size . 25) frame-pop dedicated)
-     ("^\\*Help\\*$" (side . below) (size . 15))
-     ("^\\*Completions\\*$" (side . below) (size . 10) ignore-selected frame-pop dedicated)
-     ))
-  "append this list to display-buffer-alist when tempwin-start"
+(defcustom tempwin-display-buffer-config
+  '(
+    ("^\\*eshell\\*$" (side . below) (size . 15))
+    ("^\\*IBuffer\\*$" (side . left) (size . 25) frame-pop dedicated)
+    ("^\\*Buffer List\\*$" (side . left) (size . 25) frame-pop dedicated)
+    ("^\\*Help\\*$" (side . below) (size . 15))
+    ("^\\*Completions\\*$" (side . below) (size . 10) ignore-selected frame-pop dedicated)
+    )
+  "source of display-buffer-alist"
   :group 'tempwin)
 
 (defvar tempwin-original-display-buffer-alist nil)
@@ -221,7 +220,7 @@ Return deleted window or nil if no window is deleted."
     (setq tempwin-timer (run-with-timer tempwin-timer-interval tempwin-timer-interval 'tempwin-delete-windows)))
   (unless tempwin-original-display-buffer-alist
     (setq tempwin-original-display-buffer-alist display-buffer-alist)
-    (setq display-buffer-alist (append tempwin-display-buffer-alist display-buffer-alist)))
+    (setq display-buffer-alist (append (tempwin-translate-to-buffer-alist tempwin-display-buffer-config) display-buffer-alist)))
   t)
 
 (defun tempwin-stop ()
