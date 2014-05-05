@@ -172,23 +172,30 @@ Return deleted window or nil if no window is deleted."
 (defcustom tempwin-timer-interval 0.1 "timer interval")
 
 (defun tempwin-translate-to-buffer-alist (input)
-  (let ((translate
-         (lambda (list)
-           (destructuring-bind (regexp &rest alist) list
-               (cons regexp (cons 'tempwin-display-buffer-alist-function alist))))))
+  (let* (
+         (fix-alist
+          (lambda (list)
+            (mapcar
+             (lambda (item) (if (atom item) (cons item t) item))
+             list)))
+         (translate
+          (lambda (list)
+            (destructuring-bind (regexp &rest alist) list
+              (cons
+               regexp
+               (cons
+                'tempwin-display-buffer-alist-function
+                (funcall fix-alist alist)))))))
     (mapcar translate input)))
-
-(tempwin-translate-to-buffer-alist '(("aaa" (side . above) (size . 10))))
 
 (defcustom tempwin-display-buffer-alist
   (tempwin-translate-to-buffer-alist
    '(
-     ("^\\*magit:.*\\*$" (side . above) (size . 10))
      ("^\\*eshell\\*$" (side . below) (size . 15))
-     ("^\\*IBuffer\\*$" (side . left) (size . 25) (frame-pop . t) (dedicated . t))
-     ("^\\*Buffer List\\*$" (side . left) (size . 25) (frame-pop . t) (dedicated . t))
+     ("^\\*IBuffer\\*$" (side . left) (size . 25) frame-pop dedicated)
+     ("^\\*Buffer List\\*$" (side . left) (size . 25) frame-pop dedicated)
      ("^\\*Help\\*$" (side . below) (size . 15))
-     ("^\\*Completions\\*$" (side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
+     ("^\\*Completions\\*$" (side . below) (size . 10) ignore-selected frame-pop dedicated)
      ))
    "append this list to display-buffer-alist when tempwin-start")
 
