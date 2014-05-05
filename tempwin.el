@@ -101,6 +101,7 @@ Return deleted window or nil if no window is deleted."
            (unless (eq (window-buffer window) buffer)
              (tempwin-copy-buffer-to-parent-window window))
            (when (window-live-p window) (delete-window window)))))
+      (set-window-parameter child 'delete-other-windows 'tempwin-copy-buffer-to-parent-window)
       child
       )))
 
