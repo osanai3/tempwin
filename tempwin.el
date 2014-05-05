@@ -171,46 +171,26 @@ Return deleted window or nil if no window is deleted."
 (defvar tempwin-timer nil)
 (defcustom tempwin-timer-interval 0.1 "timer interval")
 
+(defun tempwin-translate-to-buffer-alist (input)
+  (let ((translate
+         (lambda (list)
+           (destructuring-bind (regexp &rest alist) list
+               (cons regexp (cons 'tempwin-display-buffer-alist-function alist))))))
+    (mapcar translate input)))
+
+(tempwin-translate-to-buffer-alist '(("aaa" (side . above) (size . 10))))
+
 (defcustom tempwin-display-buffer-alist
-  (list
-       (cons
-        "^\\*magit:.*\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . above) (size . 10))
-        ))
-       (cons
-        "^\\*eshell\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . below) (size . 15))
-        ))
-       (cons
-        "^\\*IBuffer\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . left) (size . 25) (frame-pop . t) (dedicated . t))
-         ))
-       (cons
-        "^\\*Help\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . below) (size . 15))
-         ))
-       (cons
-        "^\\*Completions\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
-        ))
-       (cons
-        "^\\*Backtrace\\*$"
-        (cons
-         'tempwin-display-buffer-alist-function
-         '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
-        )
-        ))
-  "append this list to display-buffer-alist when tempwin-start")
+  (tempwin-translate-to-buffer-alist
+   '(
+     ("^\\*magit:.*\\*$" (side . above) (size . 10))
+     ("^\\*eshell\\*$" (side . below) (size . 15))
+     ("^\\*IBuffer\\*$" (side . left) (size . 25) (frame-pop . t) (dedicated . t))
+     ("^\\*Buffer List\\*$" (side . left) (size . 25) (frame-pop . t) (dedicated . t))
+     ("^\\*Help\\*$" (side . below) (size . 15))
+     ("^\\*Completions\\*$" (side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
+     ))
+   "append this list to display-buffer-alist when tempwin-start")
 
 (defvar tempwin-original-display-buffer-alist nil)
 
