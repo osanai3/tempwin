@@ -171,35 +171,8 @@ Return deleted window or nil if no window is deleted."
 (defvar tempwin-timer nil)
 (defcustom tempwin-timer-interval 0.1 "timer interval")
 
-(defun tempwin-start ()
-  (interactive)
-  (tempwin-minor-mode 1)
-  (add-hook 'buffer-list-update-hook 'tempwin-delete-windows)
-  (mapcar
-   (lambda (param-name)
-     (push (cons param-name t) window-persistent-parameters))
-   tempwin-window-parameters)
-  (unless tempwin-timer
-    (setq tempwin-timer (run-with-timer tempwin-timer-interval tempwin-timer-interval 'tempwin-delete-windows)))
-  t)
-
-(defun tempwin-stop ()
-  (interactive)
-  (remove-hook 'buffer-list-update-hook 'tempwin-delete-windows)
-  (tempwin-minor-mode 0)
-  (mapcar
-   (lambda (param-name)
-     (setq window-persistent-parameters (assq-delete-all param-name window-persistent-parameters)))
-   tempwin-window-parameters)
-  (cancel-timer tempwin-timer)
-  (setq tempwin-timer nil)
-  t)
-
-(provide 'tempwin)
-
-;;; tempwin.el ends here
-(setq display-buffer-alist
-      (list
+(defcustom tempwin-display-buffer-alist
+  (list
        (cons
         "^\\*magit:.*\\*$"
         (cons
@@ -236,8 +209,43 @@ Return deleted window or nil if no window is deleted."
          'tempwin-display-buffer-alist-function
          '((side . below) (size . 10) (ignore-selected . t) (frame-pop . t) (dedicated . t))
         )
-       ))
-      )
+        ))
+  "append this list to display-buffer-alist when tempwin-start")
+
+(defvar tempwin-original-display-buffer-alist nil)
+
+(defun tempwin-start ()
+  (interactive)
+  (tempwin-minor-mode 1)
+  (add-hook 'buffer-list-update-hook 'tempwin-delete-windows)
+  (mapcar
+   (lambda (param-name)
+     (push (cons param-name t) window-persistent-parameters))
+   tempwin-window-parameters)
+  (unless tempwin-timer
+    (setq tempwin-timer (run-with-timer tempwin-timer-interval tempwin-timer-interval 'tempwin-delete-windows)))
+  (unless tempwin-original-display-buffer-alist
+    (setq tempwin-original-display-buffer-alist display-buffer-alist)
+    (setq display-buffer-alist (append tempwin-display-buffer-alist display-buffer-alist)))
+  t)
+
+(defun tempwin-stop ()
+  (interactive)
+  (remove-hook 'buffer-list-update-hook 'tempwin-delete-windows)
+  (tempwin-minor-mode 0)
+  (mapcar
+   (lambda (param-name)
+     (setq window-persistent-parameters (assq-delete-all param-name window-persistent-parameters)))
+   tempwin-window-parameters)
+  (cancel-timer tempwin-timer)
+  (setq tempwin-timer nil)
+  (setq display-buffer-alist tempwin-original-display-buffer-alist)
+  (setq tempwin-original-display-buffer-alist nil)
+  t)
+
+(provide 'tempwin)
+
+;;; tempwin.el ends here
 ;(eval-buffer)
 ;(tempwin-start)
 ;(tempwin-stop)
