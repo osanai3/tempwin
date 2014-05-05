@@ -19,10 +19,17 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+;; Show buffer in temporary window.
+;; Inspired by popwin.el
+
+;; (require 'tempwin)
+;; (tempwin-start)
 
 ;;; Code:
 
 (require 'cl-lib)
+
+(defgroup tempwin nil "Show buffer in temporary window." :group 'convenience)
 
 (defvar tempwin-window-parameters
   '(
@@ -169,7 +176,7 @@ Return deleted window or nil if no window is deleted."
 (define-minor-mode tempwin-minor-mode "delete window with C-g" :global t)
 
 (defvar tempwin-timer nil)
-(defcustom tempwin-timer-interval 0.1 "timer interval")
+(defcustom tempwin-timer-interval 0.1 "timer interval" :group 'tempwin)
 
 (defun tempwin-translate-to-buffer-alist (input)
   (let* (
@@ -197,7 +204,8 @@ Return deleted window or nil if no window is deleted."
      ("^\\*Help\\*$" (side . below) (size . 15))
      ("^\\*Completions\\*$" (side . below) (size . 10) ignore-selected frame-pop dedicated)
      ))
-   "append this list to display-buffer-alist when tempwin-start")
+  "append this list to display-buffer-alist when tempwin-start"
+  :group 'tempwin)
 
 (defvar tempwin-original-display-buffer-alist nil)
 
@@ -205,7 +213,7 @@ Return deleted window or nil if no window is deleted."
   (interactive)
   (tempwin-minor-mode 1)
   (add-hook 'buffer-list-update-hook 'tempwin-delete-windows)
-  (mapcar
+  (mapc
    (lambda (param-name)
      (push (cons param-name t) window-persistent-parameters))
    tempwin-window-parameters)
@@ -220,7 +228,7 @@ Return deleted window or nil if no window is deleted."
   (interactive)
   (remove-hook 'buffer-list-update-hook 'tempwin-delete-windows)
   (tempwin-minor-mode 0)
-  (mapcar
+  (mapc
    (lambda (param-name)
      (setq window-persistent-parameters (assq-delete-all param-name window-persistent-parameters)))
    tempwin-window-parameters)
@@ -233,6 +241,3 @@ Return deleted window or nil if no window is deleted."
 (provide 'tempwin)
 
 ;;; tempwin.el ends here
-;(eval-buffer)
-;(tempwin-start)
-;(tempwin-stop)
