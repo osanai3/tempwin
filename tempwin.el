@@ -187,7 +187,7 @@ Return deleted window or nil if no window is deleted."
              list)))
          (translate
           (lambda (list)
-            (destructuring-bind (regexp &rest alist) list
+            (cl-destructuring-bind (regexp &rest alist) list
               (cons
                regexp
                (cons
