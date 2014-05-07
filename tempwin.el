@@ -211,7 +211,6 @@ Return deleted window or nil if no window is deleted."
 (defun tempwin-start ()
   (interactive)
   (tempwin-minor-mode 1)
-  (add-hook 'buffer-list-update-hook 'tempwin-delete-windows)
   (mapc
    (lambda (param-name)
      (push (cons param-name t) window-persistent-parameters))
@@ -225,7 +224,6 @@ Return deleted window or nil if no window is deleted."
 
 (defun tempwin-stop ()
   (interactive)
-  (remove-hook 'buffer-list-update-hook 'tempwin-delete-windows)
   (tempwin-minor-mode 0)
   (mapc
    (lambda (param-name)
