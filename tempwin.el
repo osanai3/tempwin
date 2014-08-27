@@ -202,7 +202,7 @@ Return deleted window or nil if no window is deleted."
 
 (defcustom tempwin-display-buffer-config
   '(
-    ("^\\*eshell\\*$" (side . below) (size . 15))
+    ("^\\*eshell\\*$" (side . below) (size . 15) dedicated)
     ("^\\*IBuffer\\*$" (side . left) (size . 25) frame-pop dedicated)
     ("^\\*Buffer List\\*$" (side . left) (size . 25) frame-pop dedicated)
     ("^\\*Help\\*$" (side . below) (size . 15))
