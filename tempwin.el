@@ -103,14 +103,20 @@ Return deleted window or nil if no window is deleted."
         (set-window-parameter
          child
          'delete-window
-         (lambda (window)
-           (set-window-parameter window 'delete-window t)
-           (unless (eq (window-buffer window) buffer)
-             (tempwin-copy-buffer-to-parent-window window))
-           (when (window-live-p window) (delete-window window)))))
+         (tempwin-create-delete-window-function buffer dedicated)
+         ))
       (set-window-parameter child 'delete-other-windows 'tempwin-delete-other-windows)
       child
       )))
+
+(defun tempwin-create-delete-window-function (buffer dedicated)
+  (lambda (window)
+    (set-window-parameter window 'delete-window t)
+    (bury-buffer buffer)
+    (if dedicated
+        (unless (eq (window-buffer window) buffer)
+          (tempwin-copy-buffer-to-parent-window window)))
+    (when (window-live-p window) (delete-window window))))
 
 (defun tempwin-create-suicide-function (window)
   (lambda ()
